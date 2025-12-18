@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        // This automatically creates $DOCKERHUB_CREDENTIALS_USR and $DOCKERHUB_CREDENTIALS_PSW
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') 
         IMAGE_NAME = 'node-app'
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 echo 'Cloning repository...'
@@ -26,18 +26,20 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                // add real tests later
+                // The logs showed your tests run during 'docker build' (Step 5/7). 
+                // That is actually a great practice!
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 echo 'Pushing image to DockerHub...'
-                sh '''
-                    echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} $DOCKERHUB_CREDENTIALS_USR/${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push $DOCKERHUB_CREDENTIALS_USR/${IMAGE_NAME}:${IMAGE_TAG}
-                '''
+                // CHANGED: Use triple DOUBLE quotes (""") so ${IMAGE_NAME} expands correctly
+                sh """
+                    echo \$DOCKERHUB_CREDENTIALS_PSW | docker login -u \$DOCKERHUB_CREDENTIALS_USR --password-stdin
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} \$DOCKERHUB_CREDENTIALS_USR/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push \$DOCKERHUB_CREDENTIALS_USR/${IMAGE_NAME}:${IMAGE_TAG}
+                """
             }
         }
 
@@ -45,7 +47,7 @@ pipeline {
             steps {
                 echo 'Deploying application...'
                 sh '''
-                    docker compose down
+                    docker compose down || true
                     docker compose up -d
                 '''
             }
